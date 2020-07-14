@@ -29,7 +29,7 @@
   },
   "scripts": {
     "coverage": "nyc report --reporter=text-lcov --reporter=html | coveralls",
-    "test": "nyc tape test.js"
+    "test": "nyc tape test/jsondown.test.js"
   },
   "homepage": "https://github.com/toolness/jsondown",
   "repository": {

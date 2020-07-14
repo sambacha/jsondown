@@ -1,6 +1,6 @@
 const test = require("tape");
 const suite = require("abstract-leveldown/test");
-const JsonDOWN = require("./jsondown");
+const JsonDOWN = require("../jsondown");
 const tempy = require("tempy");
 
 const testCommon = suite.common({
@@ -12,8 +12,8 @@ suite(testCommon);
 
 test("setUp", testCommon.setUp);
 
-test("custom test", function (t) {
-  var db = testCommon.factory();
+test("location includes file name", function (t) {
+  const db = testCommon.factory();
   db.location = db.location + "/data.json";
 
   // default createIfMissing=true, errorIfExists=false
@@ -23,6 +23,25 @@ test("custom test", function (t) {
       t.end();
     });
   });
+});
+
+test("malformed JSON should return an error", (t) => {
+  const db = testCommon.factory();
+  const location = tempy
+    .write("{", {
+      extension: "json",
+    })
+    .then((filename) => {
+      db.location = filename;
+      db.open((err) => {
+        t.match(
+          err.toString(),
+          new RegExp(`Error parsing JSON in ${filename}:`, "g"),
+          "malformed json returns error"
+        );
+        t.end();
+      });
+    });
 });
 
 test("tearDown", testCommon.tearDown);
