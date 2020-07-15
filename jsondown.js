@@ -2,7 +2,7 @@ const AbstractLevelDOWN = require("abstract-leveldown").AbstractLevelDOWN;
 const os = require("os");
 const util = require("util");
 const path = require("path");
-const mkdirp = require("mkdirp");
+const makeDir = require("make-dir");
 const MemDOWN = require("memdown");
 const fs = require("fs");
 
@@ -15,9 +15,6 @@ function serializeStore(store) {
 }
 
 function jsonToBatchOps(data) {
-  if (!data) {
-    throw new Error();
-  }
   return Object.keys(data).map(function (key) {
     var value = data[key];
     if (typeof value !== "string") {
@@ -55,7 +52,6 @@ function reviver(k, v) {
 function noop() {}
 
 function JsonDOWN(location) {
-  if (!(this instanceof JsonDOWN)) return new JsonDOWN(location);
   AbstractLevelDOWN.call(this);
   MemDOWN.call(this);
   this.location = location;
@@ -77,7 +73,7 @@ JsonDOWN.prototype._open = function (options, callback) {
       ? this.location.split(path.sep).slice(0, -1).join(path.sep)
       : this.location;
 
-  mkdirp(subdir)
+  makeDir(subdir)
     .then((made) => {
       fs.exists(loc, function (exists) {
         if (!exists && options.createIfMissing === false) {
@@ -120,7 +116,9 @@ JsonDOWN.prototype._open = function (options, callback) {
         }
       });
     })
-    .catch((errMkdirp) => callback(errMkdirp));
+    .catch((err) => {
+      callback(err);
+    });
 };
 
 JsonDOWN.prototype._close = function (cb) {
