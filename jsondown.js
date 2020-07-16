@@ -1,5 +1,4 @@
 const AbstractLevelDOWN = require("abstract-leveldown").AbstractLevelDOWN;
-const os = require("os");
 const util = require("util");
 const path = require("path");
 const makeDir = require("make-dir");
@@ -15,11 +14,11 @@ function serializeStore(store) {
 }
 
 function jsonToBatchOps(data) {
-  return Object.keys(data).map(function (key) {
+  return Object.keys(data).map((key) => {
     var value = data[key];
     if (typeof value !== "string") {
       try {
-        value = new Buffer(value);
+        value = Buffer.from(value);
       } catch (e) {
         throw new Error(
           "Error parsing value " + JSON.stringify(value) + " as a buffer"
@@ -43,7 +42,7 @@ function reviver(k, v) {
     "data" in v &&
     Array.isArray(v.data)
   ) {
-    return new Buffer(v.data);
+    return Buffer.from(v.data);
   } else {
     return v;
   }
@@ -75,46 +74,49 @@ JsonDOWN.prototype._open = function (options, callback) {
 
   makeDir(subdir)
     .then((made) => {
-      fs.exists(loc, function (exists) {
-        if (!exists && options.createIfMissing === false) {
-          callback(
-            new Error(loc + " does not exist (createIfMissing is false)")
-          );
-        } else if (exists && options.errorIfExists) {
-          callback(new Error(loc + " exists (errorIfExists is true)"));
-        } else if (!exists) {
-          fs.open(loc, "w", callback);
-        } else {
-          fs.readFile(
-            loc,
-            {
-              encoding: "utf-8",
-              flag: "r",
-            },
-            function (err, data) {
-              if (err) return callback(err, data);
-              try {
-                data = JSON.parse(data, reviver);
-              } catch (e) {
-                return callback(
-                  new Error("Error parsing JSON in " + loc + ": " + e.message)
-                );
-              }
-              self._isLoadingFromFile = true;
-              try {
+      fs.promises
+        .stat(loc)
+        .then(() => {
+          if (options.errorIfExists) {
+            callback(new Error(loc + " exists (errorIfExists is true)"));
+          } else {
+            fs.promises
+              .readFile(loc, {
+                encoding: "utf-8",
+                flag: "r",
+              })
+              .then((data) => {
                 try {
-                  self._batch(jsonToBatchOps(data), {}, noop);
-                } finally {
-                  self._isLoadingFromFile = false;
+                  data = JSON.parse(data, reviver);
+                } catch (e) {
+                  return callback(
+                    new Error("Error parsing JSON in " + loc + ": " + e.message)
+                  );
                 }
-              } catch (e) {
-                return callback(e);
-              }
-              callback(null, self);
-            }
-          );
-        }
-      });
+                self._isLoadingFromFile = true;
+                try {
+                  try {
+                    self._batch(jsonToBatchOps(data), {}, noop);
+                  } finally {
+                    self._isLoadingFromFile = false;
+                  }
+                } catch (e) {
+                  return callback(e);
+                }
+                callback(null, self);
+              })
+              .catch(callback);
+          }
+        })
+        .catch(() => {
+          if (options.createIfMissing === false) {
+            callback(
+              new Error(loc + " does not exist (createIfMissing is false)")
+            );
+          } else {
+            fs.open(loc, "w", callback);
+          }
+        });
     })
     .catch((err) => {
       callback(err);
@@ -128,28 +130,29 @@ JsonDOWN.prototype._close = function (cb) {
 JsonDOWN.prototype._writeToDisk = function (cb) {
   if (this._isWriting) return this._queuedWrites.push(cb);
   this._isWriting = true;
-  var loc =
+  const loc =
     this.location.slice(-5) === ".json"
       ? this.location
       : path.join(this.location, "data.json");
+  const self = this;
   fs.writeFile(
     loc,
     serializeStore(this._store),
     {
       encoding: "utf-8",
     },
-    function (err) {
-      var queuedWrites = this._queuedWrites.splice(0);
-      this._isWriting = false;
+    (err) => {
+      var queuedWrites = self._queuedWrites.splice(0);
+      self._isWriting = false;
       if (queuedWrites.length) {
-        this._writeToDisk(function (err) {
-          queuedWrites.forEach(function (cb) {
+        self._writeToDisk((err) => {
+          queuedWrites.forEach((cb) => {
             cb(err);
           });
         });
       }
       cb(err);
-    }.bind(this)
+    }
   );
 };
 
