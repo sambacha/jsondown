@@ -13,14 +13,14 @@ suite(testCommon);
 
 test("setUp", testCommon.setUp);
 
-test("location includes file name", function (t) {
+test("location includes file name", (t) => {
   const db = testCommon.factory();
   db.location = db.location + "/data.json";
 
   // default createIfMissing=true, errorIfExists=false
-  db.open(function (err) {
+  db.open((err) => {
     t.error(err);
-    db.close(function () {
+    db.close(() => {
       t.end();
     });
   });
