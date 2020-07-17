@@ -1,5 +1,4 @@
 const AbstractLevelDOWN = require("abstract-leveldown").AbstractLevelDOWN;
-const util = require("util");
 const path = require("path");
 const makeDir = require("make-dir");
 const MemDOWN = require("memdown");
