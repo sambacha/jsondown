@@ -1,6 +1,6 @@
-[![Build Status](https://travis-ci.org/GarthDB/jsondown.svg?branch=master)](https://travis-ci.org/GarthDB/jsondown) [![Coverage Status](https://coveralls.io/repos/github/GarthDB/jsondown/badge.svg?branch=master)](https://coveralls.io/github/GarthDB/jsondown?branch=master) [![Known Vulnerabilities](https://snyk.io/test/github/garthdb/jsondown/badge.svg)](https://snyk.io/test/github/garthdb/jsondown)
-
 # JSON Down
+
+[![Build Status](https://travis-ci.org/GarthDB/jsondown.svg?branch=master)](https://travis-ci.org/GarthDB/jsondown) [![Coverage Status](https://coveralls.io/repos/github/GarthDB/jsondown/badge.svg?branch=master)](https://coveralls.io/github/GarthDB/jsondown?branch=master) [![Known Vulnerabilities](https://snyk.io/test/github/garthdb/jsondown/badge.svg)](https://snyk.io/test/github/garthdb/jsondown)
 
 This is a drop-in replacement for [LevelDOWN][] that writes to
 a JSON file on disk.
