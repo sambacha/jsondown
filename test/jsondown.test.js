@@ -52,7 +52,7 @@ test("bad location path should returns an error", (t) => {
     t.match(
       err.toString(),
       new RegExp(
-        `The argument 'path' must be a string or Uint8Array without null bytes. Received`,
+        "The argument 'path' must be a string or Uint8Array without null bytes. Received",
         "g"
       ),
       "bad path returns an error"
@@ -63,9 +63,9 @@ test("bad location path should returns an error", (t) => {
 
 test("batchOps with values", (t) => {
   const db = testCommon.factory();
-  db.open(function (err) {
+  db.open((err) => {
     t.error(err);
-    db.put("foo", "bar", (err) => {
+    db.put("foo", 4, (err) => {
       t.error(err);
       db.close((err) => {
         t.error(err);
@@ -76,6 +76,39 @@ test("batchOps with values", (t) => {
           });
         });
       });
+    });
+  });
+});
+
+test("batchOps with values", (t) => {
+  const db = testCommon.factory();
+  db.location = tempy.writeSync('{"foo":{"type":"Buffer","data":"ding"}}', {
+    name: "db.json",
+  });
+  db.open((err) => {
+    t.match(
+      err.toString(),
+      new RegExp(
+        'Error parsing value {"type":"Buffer","data":"ding"} as a buffer',
+        "g"
+      ),
+      "bad path returns an error"
+    );
+    t.end();
+  });
+});
+
+test("batchOps with int", (t) => {
+  const db = testCommon.factory();
+  db.location = tempy.writeSync('{"foo":3}', {
+    name: "db.json",
+  });
+  db.open((err, value) => {
+    t.error(err);
+    db.get("foo", (err, value) => {
+      t.error(err);
+      t.equal(value, 3);
+      t.end();
     });
   });
 });

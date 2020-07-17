@@ -6,7 +6,7 @@ const MemDOWN = require("memdown");
 const fs = require("fs");
 
 function serializeStore(store) {
-  var result = {};
+  const result = {};
   store.forEach((key, value) => {
     result[key] = value;
   });
@@ -15,8 +15,8 @@ function serializeStore(store) {
 
 function jsonToBatchOps(data) {
   return Object.keys(data).map((key) => {
-    var value = data[key];
-    if (typeof value !== "string") {
+    let value = data[key];
+    if (typeof value === "object" && value !== null) {
       try {
         value = Buffer.from(value);
       } catch (e) {
@@ -62,12 +62,12 @@ function JsonDOWN(location) {
 util.inherits(JsonDOWN, MemDOWN);
 
 JsonDOWN.prototype._open = function (options, callback) {
-  var self = this;
-  var loc =
+  const self = this;
+  const loc =
     this.location.slice(-5) === ".json"
       ? this.location
       : path.join(this.location, "data.json");
-  var subdir =
+  const subdir =
     this.location.slice(-5) === ".json"
       ? this.location.split(path.sep).slice(0, -1).join(path.sep)
       : this.location;
@@ -142,7 +142,7 @@ JsonDOWN.prototype._writeToDisk = function (cb) {
       encoding: "utf-8",
     },
     (err) => {
-      var queuedWrites = self._queuedWrites.splice(0);
+      const queuedWrites = self._queuedWrites.splice(0);
       self._isWriting = false;
       if (queuedWrites.length) {
         self._writeToDisk((err) => {
