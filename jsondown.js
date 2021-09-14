@@ -1,43 +1,34 @@
-var AbstractLevelDOWN = require("abstract-leveldown").AbstractLevelDOWN;
-var os = require("os");
-var util = require("util");
-var path = require("path");
-var mkdirp = require("mkdirp");
-var MemDOWN = require("memdown");
-var fs = os.hostname() === "runtime" ? require("./runtime-fs") : require("fs");
-
-function serializeRBTree(tree) {
-  var result = {};
-  tree.forEach((key, value) => {
-    result[key] = value;
-  });
-  return result;
-}
+const AbstractLevelDOWN = require("abstract-leveldown").AbstractLevelDOWN;
+const path = require("path");
+const makeDir = require("make-dir");
+const MemDOWN = require("memdown");
+const fs = require("fs");
 
 function serializeStore(store) {
-  var result = {};
-  Object.keys(store).forEach(location => {
-    result[location] = serializeRBTree(store[location]);
+  const result = {};
+  store.forEach((key, value) => {
+    result[key] = value;
   });
   return JSON.stringify(result);
 }
 
 function jsonToBatchOps(data) {
-  if (!data) {
-    throw new Error();
-  }
-  return Object.keys(data).map(function(key) {
-    var value = data[key];
-    if (typeof value != "string") {
+  return Object.keys(data).map((key) => {
+    let value = data[key];
+    if (typeof value === "object" && value !== null) {
       try {
-        value = new Buffer(value);
+        value = Buffer.from(value);
       } catch (e) {
         throw new Error(
           "Error parsing value " + JSON.stringify(value) + " as a buffer"
         );
       }
     }
-    return { type: "put", key: key, value: value };
+    return {
+      type: "put",
+      key: key,
+      value: value,
+    };
   });
 }
 
@@ -50,112 +41,126 @@ function reviver(k, v) {
     "data" in v &&
     Array.isArray(v.data)
   ) {
-    return new Buffer(v.data);
+    return Buffer.from(v.data);
   } else {
     return v;
   }
 }
 
-function noop() {}
-
-function JsonDOWN(location) {
-  if (!(this instanceof JsonDOWN)) return new JsonDOWN(location);
-  AbstractLevelDOWN.call(this, location);
-  MemDOWN.call(this, location);
-  this._isLoadingFromFile = false;
-  this._isWriting = false;
-  this._queuedWrites = [];
-}
-
-util.inherits(JsonDOWN, MemDOWN);
-
-JsonDOWN.prototype._open = function(options, callback) {
-  var self = this;
-  var loc = this.location.slice(-5) === ".json" ?
-    this.location :
-    path.join(this.location, "data.json");
-  var separator = os.platform() === "win32" ? "\\" : "/";
-  var subdir =
-    this.location.slice(-5) === ".json"
-      ? this.location.split(separator).slice(0, -1).join(separator)
-      : this.location;
-
-  mkdirp(subdir, function(errMkdirp) {
-    if (errMkdirp)
-      return callback(errMkdirp);
-
-    fs.exists(loc, function(exists) {
-      if (!exists && options.createIfMissing === false)
-        callback(new Error(loc + " does not exist (createIfMissing is false)"));
-      else if (exists && options.errorIfExists)
-        callback(new Error(loc + " exists (errorIfExists is true)"));
-      else if (!exists)
-        fs.open(loc, "w", callback);
-      else
-        fs.readFile(loc, { encoding: "utf-8", flag: "r" }, function(err, data) {
-          if (err)
-            return callback(err, data);
-          try {
-            data = JSON.parse(data, reviver);
-          } catch (e) {
-            return callback(
-              new Error("Error parsing JSON in " + loc + ": " + e.message)
-            );
-          }
-          self._isLoadingFromFile = true;
-          try {
-            try {
-              self._batch(jsonToBatchOps(data[self._location]), {}, noop);
-            } finally {
-              self._isLoadingFromFile = false;
-            }
-          } catch (e) {
-            return callback(e);
-          }
-          callback(null, self);
-        });
-    });
-  });
-};
-
-JsonDOWN.prototype._close = function(cb) {
-  this._writeToDisk(cb);
-};
-
-JsonDOWN.prototype._writeToDisk = function(cb) {
-  if (this._isWriting) return this._queuedWrites.push(cb);
-  this._isWriting = true;
-  var loc = this.location.slice(-5) === ".json" ?
-    this.location :
-    path.join(this.location, "data.json");
-  fs.writeFile(loc, serializeStore(this._store), { encoding: "utf-8" },
-    function(err) {
-      var queuedWrites = this._queuedWrites.splice(0);
-      this._isWriting = false;
-      if (queuedWrites.length)
-        this._writeToDisk(function(err) {
-          queuedWrites.forEach(function(cb) {
-            cb(err);
+class JsonDOWN extends MemDOWN {
+  constructor(location) {
+    super();
+    this.location = location;
+    this._isLoadingFromFile = false;
+    this._isWriting = false;
+    this._queuedWrites = [];
+  }
+  _close(cb) {
+    this._writeToDisk(cb);
+  }
+  _writeToDisk(cb) {
+    if (this._isWriting) return this._queuedWrites.push(cb);
+    this._isWriting = true;
+    const loc =
+      this.location.slice(-5) === ".json"
+        ? this.location
+        : path.join(this.location, "data.json");
+    const self = this;
+    fs.writeFile(
+      loc,
+      serializeStore(this._store),
+      {
+        encoding: "utf-8",
+      },
+      (err) => {
+        const queuedWrites = self._queuedWrites.splice(0);
+        self._isWriting = false;
+        if (queuedWrites.length) {
+          self._writeToDisk((err) => {
+            queuedWrites.forEach((cb) => {
+              cb(err);
+            });
           });
-        });
-      cb(err);
-    }.bind(this)
-  );
-};
+        }
+        cb(err);
+      }
+    );
+  }
+  _put(key, value, options, cb) {
+    MemDOWN.prototype._put.call(this, key, value, options, () => {});
+    if (!this._isLoadingFromFile) this._writeToDisk(cb);
+  }
+  _batch(array, options, cb) {
+    MemDOWN.prototype._batch.call(this, array, options, () => {});
+    if (!this._isLoadingFromFile) this._writeToDisk(cb);
+  }
+  _del(key, options, cb) {
+    MemDOWN.prototype._del.call(this, key, options, () => {});
+    this._writeToDisk(cb);
+  }
+  _open(options, callback) {
+    const self = this;
+    const loc =
+      this.location.slice(-5) === ".json"
+        ? this.location
+        : path.join(this.location, "data.json");
+    const subdir =
+      this.location.slice(-5) === ".json"
+        ? this.location.split(path.sep).slice(0, -1).join(path.sep)
+        : this.location;
 
-JsonDOWN.prototype._put = function(key, value, options, cb) {
-  MemDOWN.prototype._put.call(this, key, value, options, noop);
-  if (!this._isLoadingFromFile) this._writeToDisk(cb);
-};
-
-JsonDOWN.prototype._batch = function(array, options, cb) {
-  MemDOWN.prototype._batch.call(this, array, options, noop);
-  if (!this._isLoadingFromFile) this._writeToDisk(cb);
-};
-
-JsonDOWN.prototype._del = function(key, options, cb) {
-  MemDOWN.prototype._del.call(this, key, options, noop);
-  this._writeToDisk(cb);
-};
+    makeDir(subdir)
+      .then((made) => {
+        fs.promises
+          .stat(loc)
+          .then(() => {
+            if (options.errorIfExists) {
+              callback(new Error(loc + " exists (errorIfExists is true)"));
+            } else {
+              fs.promises
+                .readFile(loc, {
+                  encoding: "utf-8",
+                  flag: "r",
+                })
+                .then((data) => {
+                  try {
+                    data = JSON.parse(data, reviver);
+                  } catch (e) {
+                    return callback(
+                      new Error(
+                        "Error parsing JSON in " + loc + ": " + e.message
+                      )
+                    );
+                  }
+                  self._isLoadingFromFile = true;
+                  try {
+                    try {
+                      self._batch(jsonToBatchOps(data), {}, () => {});
+                    } finally {
+                      self._isLoadingFromFile = false;
+                    }
+                  } catch (e) {
+                    return callback(e);
+                  }
+                  callback(null, self);
+                })
+                .catch(callback);
+            }
+          })
+          .catch(() => {
+            if (options.createIfMissing === false) {
+              callback(
+                new Error(loc + " does not exist (createIfMissing is false)")
+              );
+            } else {
+              fs.open(loc, "w", callback);
+            }
+          });
+      })
+      .catch((err) => {
+        callback(err);
+      });
+  }
+}
 
 module.exports = JsonDOWN;

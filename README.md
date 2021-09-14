@@ -1,4 +1,6 @@
-[![Travis](https://secure.travis-ci.org/toolness/jsondown.png)](http://travis-ci.org/toolness/jsondown)
+# JSON Down
+
+[![Build Status](https://travis-ci.org/GarthDB/jsondown.svg?branch=master)](https://travis-ci.org/GarthDB/jsondown) [![Coverage Status](https://coveralls.io/repos/github/GarthDB/jsondown/badge.svg?branch=master)](https://coveralls.io/github/GarthDB/jsondown?branch=master) [![Known Vulnerabilities](https://snyk.io/test/github/garthdb/jsondown/badge.svg)](https://snyk.io/test/github/garthdb/jsondown)
 
 This is a drop-in replacement for [LevelDOWN][] that writes to
 a JSON file on disk.
@@ -10,17 +12,10 @@ data stores that need just a pinch of persistence.
 ## Example
 
 ```js
-var levelup = require('levelup');
-var db = levelup('./mydata.json', { db: require('jsondown') });
+const levelup = require("levelup");
+const jsondown = require("jsondown");
 
-db.put('foo', 'bar');
+const db = levelup(new jsondown("./mydata.json"));
+
+db.put("foo", "bar");
 ```
-
-## Alternative Runtimes
-
-In addition to NodeJS, JsonDOWN can be used on the [RuntimeJS][]
-javascript unikernel. Additional details are provided in the `guides`
-section of this repositiory.
-
-  [LevelDOWN]: https://github.com/rvagg/node-leveldown
-  [RuntimeJS]: https://github.com/runtimejs/runtime
