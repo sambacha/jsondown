@@ -1,6 +1,6 @@
 {
   "name": "jsondown",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "A drop-in replacement for LevelDOWN that writes to a JSON file on disk",
   "main": "./jsondown.js",
   "keywords": [
@@ -14,13 +14,13 @@
   },
   "dependencies": {
     "memdown": "^5.1.0",
-    "mkdirp": "^1.0.4"
+    "mkdirp": "^1.0.4",
+    "abstract-leveldown": "^6.3.0",
   },
   "peerDependencies": {
     "abstract-leveldown": "*"
   },
   "devDependencies": {
-    "abstract-leveldown": "^6.3.0",
     "levelup": "^4.4.0",
     "make-dir": "^3.1.0",
     "nyc": "^15.1.0",
@@ -31,10 +31,10 @@
     "coverage": "nyc report --reporter=text-lcov --reporter=html",
     "test": "nyc tape test/jsondown.test.js"
   },
-  "homepage": "https://github.com/toolness/jsondown",
+  "homepage": "https://github.com/sambacha/jsondown",
   "repository": {
     "type": "git",
-    "url": "https://github.com/toolness/jsondown.git"
+    "url": "https://github.com/sambacha/jsondown.git"
   },
   "author": "Atul Varma <varmaa@gmail.com>",
   "license": "0BSD"
