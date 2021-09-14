@@ -15,7 +15,7 @@
   "dependencies": {
     "memdown": "^5.1.0",
     "mkdirp": "^1.0.4",
-    "abstract-leveldown": "^6.3.0",
+    "abstract-leveldown": "^6.3.0"
   },
   "peerDependencies": {
     "abstract-leveldown": "*"
