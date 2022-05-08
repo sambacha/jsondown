@@ -1,6 +1,6 @@
 {
   "name": "jsondown",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "A drop-in replacement for LevelDOWN that writes to a JSON file on disk",
   "main": "./jsondown.js",
   "keywords": [
@@ -14,7 +14,7 @@
   },
   "dependencies": {
     "memdown": "^5.1.0",
-    "mkdirp": "^1.0.4",
+    "make-dir": "^3.1.0",
     "abstract-leveldown": "^6.3.0"
   },
   "peerDependencies": {
@@ -22,7 +22,6 @@
   },
   "devDependencies": {
     "levelup": "^4.4.0",
-    "make-dir": "^3.1.0",
     "nyc": "^15.1.0",
     "tape": "^5.0.1",
     "tempy": "^0.5.0"
